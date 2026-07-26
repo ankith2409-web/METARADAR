@@ -8,15 +8,22 @@ export default {
     extend: {
       colors: {
         radar: {
-          bg: "#0B0F17",
-          panel: "#151C2C",
-          border: "#232F48",
+          bg: "#0A0B0D",
+          surface1: "#131417",
+          surface2: "#1A1B1F",
+          surface3: "#212226",
+          border: "#262830",
           accent: "#3B82F6",
-          red: "#EF4444",
+          teal: "#14B8A6",
           amber: "#F59E0B",
-          emerald: "#10B981",
-          purple: "#8B5CF6"
+          orange: "#F97316",
+          red: "#EF4444",
+          purple: "#A855F7",
         }
+      },
+      fontFamily: {
+        sans: ['Inter', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'monospace'],
       }
     },
   },

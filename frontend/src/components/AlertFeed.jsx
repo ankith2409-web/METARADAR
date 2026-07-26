@@ -1,112 +1,165 @@
-import React from 'react';
-import { ExternalLink, Brain, ArrowRight, Calendar, Building2, ShieldAlert, Sparkles } from 'lucide-react';
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
+import { Brain, Filter, ChevronRight, FileText, Search, Zap, X, ShieldAlert } from 'lucide-react';
 
-export default function AlertFeed({ signals, onSelectSignal }) {
+export default function AlertFeed({ signals = [], onSelectSignal }) {
+  const [selectedThreat, setSelectedThreat] = useState('ALL');
+  const [selectedChannel, setSelectedChannel] = useState('ALL');
+  const [filterText, setFilterText] = useState('');
+
+  const filteredSignals = signals.filter((sig) => {
+    if (selectedThreat !== 'ALL' && sig.threat_level?.toUpperCase() !== selectedThreat) return false;
+    if (selectedChannel !== 'ALL' && sig.channel?.toUpperCase() !== selectedChannel) return false;
+    if (filterText && !sig.title?.toLowerCase().includes(filterText.toLowerCase()) && !sig.competitor?.toLowerCase().includes(filterText.toLowerCase())) {
+      return false;
+    }
+    return true;
+  });
+
+  const getThreatBadge = (level) => {
+    switch (level?.toUpperCase()) {
+      case 'CRITICAL':
+      case 'HIGH':
+        return 'threat-badge-critical';
+      case 'ELEVATED':
+      case 'MEDIUM':
+        return 'threat-badge-elevated';
+      default:
+        return 'threat-badge-watch';
+    }
+  };
+
   return (
-    <div className="glass-panel rounded-2xl p-6 shadow-2xl flex flex-col h-full border border-white/10">
-      <div className="flex items-center justify-between mb-5">
+    <div className="surface-1 rounded-xl p-5 border border-[#262830] shadow-2xl space-y-4 font-sans">
+      
+      {/* 1. Header with Query Builder Chip Bar */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#262830] pb-4">
         <div>
-          <h2 className="text-base font-bold text-white flex items-center gap-2.5">
-            <div className="p-1.5 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-cyan-400">
-              <Brain className="w-4 h-4" />
-            </div>
-            <span>Competitive Intelligence Alert Feed</span>
-          </h2>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Real-time scored signals with explainable multi-agent reasoning trace
+          <div className="flex items-center space-x-2">
+            <Brain className="w-5 h-5 text-blue-400" />
+            <h2 className="text-sm font-bold font-mono text-white uppercase tracking-wider">
+              REAL-TIME SIGNAL FEED & QUERY BUILDER
+            </h2>
+          </div>
+          <p className="text-xs text-gray-400 mt-0.5">
+            High-density signal stream with automated multi-agent threat scores and citation evidence.
           </p>
         </div>
-        <span className="text-xs font-mono text-cyan-400 bg-cyan-500/10 px-3 py-1 rounded-full border border-cyan-500/20 font-semibold shadow-inner">
-          {signals.length} Signals
-        </span>
+
+        {/* Filter Chip Query Builder Bar */}
+        <div className="flex flex-wrap items-center gap-2">
+          
+          {/* Threat Chips */}
+          <div className="flex items-center space-x-1 bg-[#1A1B1F] p-1 rounded-lg border border-[#262830] text-xs font-mono">
+            <span className="text-gray-400 px-1 text-[10px]">SEVERITY:</span>
+            {['ALL', 'CRITICAL', 'ELEVATED', 'WATCH'].map(t => (
+              <button
+                key={t}
+                onClick={() => setSelectedThreat(t)}
+                className={`px-2 py-0.5 rounded transition-colors ${
+                  selectedThreat === t ? 'bg-blue-600 text-white font-bold' : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+
+          {/* Channel Filter Chips */}
+          <div className="flex items-center space-x-1 bg-[#1A1B1F] p-1 rounded-lg border border-[#262830] text-xs font-mono">
+            <span className="text-gray-400 px-1 text-[10px]">CHANNEL:</span>
+            {['ALL', 'CLINICALTRIALS', 'PUBMED', 'RSS'].map(c => (
+              <button
+                key={c}
+                onClick={() => setSelectedChannel(c)}
+                className={`px-2 py-0.5 rounded transition-colors ${
+                  selectedChannel === c ? 'bg-teal-600 text-white font-bold' : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                {c === 'CLINICALTRIALS' ? 'TRIALS' : c}
+              </button>
+            ))}
+          </div>
+
+        </div>
       </div>
 
-      {/* Scrollable feed */}
-      <div className="space-y-3.5 overflow-y-auto pr-1 flex-1 max-h-[620px]">
-        {signals.map((sig) => {
-          const badgeClass =
-            sig.threat_level === 'high'
-              ? 'threat-badge-high'
-              : sig.threat_level === 'medium'
-              ? 'threat-badge-medium'
-              : 'threat-badge-low';
-
-          return (
-            <div
-              key={sig.id}
+      {/* 2. Dense Scannable Signal List */}
+      <div className="space-y-2.5 max-h-[580px] overflow-y-auto pr-1">
+        {filteredSignals.length === 0 ? (
+          <div className="py-12 text-center text-xs font-mono text-gray-500 surface-2 rounded-lg border border-[#262830]">
+            NO SIGNALS MATCHING CURRENT QUERY BUILDER FILTERS.
+          </div>
+        ) : (
+          filteredSignals.map((sig, idx) => (
+            <motion.div
+              key={sig.id || idx}
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.15 }}
               onClick={() => onSelectSignal(sig)}
-              className="group bg-[#0B0F19]/90 border border-white/10 hover:border-cyan-500/40 p-4.5 rounded-xl transition-all cursor-pointer shadow-md hover:shadow-xl hover:-translate-y-0.5 glass-card-hover"
+              className="terminal-card-hover surface-2 rounded-lg p-3.5 border border-[#262830] cursor-pointer group space-y-2"
             >
-              {/* Card Header */}
-              <div className="flex items-start justify-between gap-3 mb-2.5">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className={`px-2.5 py-0.5 text-[11px] rounded-full uppercase tracking-wider ${badgeClass}`}>
-                    {sig.threat_level} threat ({sig.relevance_score}/10)
+              {/* Row Top Metadata */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2.5">
+                  {/* Severity Badge */}
+                  <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded uppercase ${getThreatBadge(sig.threat_level)}`}>
+                    {sig.threat_level || 'ELEVATED'}
                   </span>
 
-                  {/* Exposure Badge */}
-                  {sig.exposure_routing && (
-                    <span className={`px-2 py-0.5 text-[10px] font-mono font-bold uppercase rounded-full border ${
-                      sig.exposure_routing.exposure_bucket === 'High' ? 'bg-red-500/20 text-red-400 border-red-500/30' :
-                      sig.exposure_routing.exposure_bucket === 'Medium' ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' :
-                      'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-                    }`}>
-                      Exposure: {sig.exposure_routing.exposure_bucket}
+                  {/* Competitor Chip */}
+                  <span className="text-xs font-mono font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">
+                    {sig.competitor || 'Eli Lilly'}
+                  </span>
+
+                  {/* Source Channel Tag */}
+                  <span className="text-[10px] font-mono text-gray-400 uppercase bg-[#131417] px-2 py-0.5 rounded border border-[#262830]">
+                    {sig.channel || 'CLINICALTRIALS'}
+                  </span>
+
+                  {/* NCT ID Chip */}
+                  {sig.nct_id && (
+                    <span className="text-[10px] font-mono text-teal-300 bg-teal-500/10 border border-teal-500/20 px-2 py-0.5 rounded">
+                      {sig.nct_id}
                     </span>
                   )}
-
-                  {/* Owner Desk Badge */}
-                  {sig.exposure_routing?.routing_owner && (
-                    <span className="px-2 py-0.5 text-[10px] font-mono font-semibold text-purple-300 bg-purple-500/20 rounded-full border border-purple-500/30">
-                      {sig.exposure_routing.routing_owner}
-                    </span>
-                  )}
-
-                  <span className="flex items-center gap-1 text-xs font-semibold text-cyan-300 bg-cyan-500/10 px-2.5 py-0.5 rounded-full border border-cyan-500/20">
-                    <Building2 className="w-3 h-3" />
-                    {sig.competitor}
-                  </span>
-
-                  <span className="text-[11px] font-mono text-slate-400 bg-[#131B2E] px-2 py-0.5 rounded border border-white/10">
-                    {sig.source}
-                  </span>
                 </div>
 
-                <span className="text-[11px] text-slate-400 flex items-center gap-1 shrink-0 font-mono">
-                  <Calendar className="w-3 h-3 text-slate-400" />
-                  {sig.published_date}
-                </span>
-              </div>
-
-
-              {/* Title & Summary */}
-              <h3 className="text-sm font-bold text-slate-100 group-hover:text-cyan-300 transition-colors mb-1.5 leading-snug line-clamp-2">
-                {sig.title}
-              </h3>
-              <p className="text-xs text-slate-400 line-clamp-2 mb-3.5 leading-relaxed font-normal">
-                {sig.summary}
-              </p>
-
-              {/* Actionable Rationale & Agent Trace CTA */}
-              <div className="flex items-center justify-between border-t border-white/10 pt-3 text-xs">
-                <div className="flex items-center gap-2 text-slate-300 truncate max-w-[70%]">
-                  <span className="text-cyan-400 font-semibold shrink-0 text-[11px]">Recommended Action:</span>
-                  <span className="truncate bg-gradient-to-r from-cyan-500/15 to-blue-500/15 border border-cyan-500/30 px-2.5 py-0.5 rounded-lg text-cyan-200 text-[11px] font-medium shadow-sm">
-                    {sig.recommended_action || "Monitor"}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-1 text-cyan-400 font-semibold group-hover:translate-x-1 transition-transform text-[11px]">
-                  <Sparkles className="w-3 h-3 text-cyan-400" />
-                  <span>View Agent Trace</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
+                {/* JetBrains Mono Timestamp */}
+                <div className="text-[11px] font-mono text-gray-400">
+                  {sig.published_date || sig.timestamp || '2026-07-26 10:42 UTC'}
                 </div>
               </div>
-            </div>
-          );
-        })}
+
+              {/* Title & One-Line Summary */}
+              <div>
+                <h3 className="text-xs font-bold text-gray-100 group-hover:text-blue-300 transition-colors font-sans">
+                  {sig.title}
+                </h3>
+                <p className="text-xs text-gray-400 line-clamp-2 mt-1 leading-relaxed font-sans">
+                  {sig.summary}
+                </p>
+              </div>
+
+              {/* Row Footer Actions */}
+              <div className="flex items-center justify-between pt-2 border-t border-[#262830] text-[10px] font-mono">
+                <div className="flex items-center space-x-3 text-gray-400">
+                  <span>RELEVANCE: <strong className="text-white">{(sig.relevance_score * 100 || 85).toFixed(0)}%</strong></span>
+                  <span>•</span>
+                  <span>DESK OWNER: <strong className="text-purple-300">{sig.exposure_routing?.routing_owner || 'GLP-1 DESK'}</strong></span>
+                </div>
+
+                <div className="flex items-center space-x-1 text-blue-400 font-bold group-hover:translate-x-1 transition-transform">
+                  <span>INSPECT AGENT TRACE</span>
+                  <ChevronRight className="w-3 h-3" />
+                </div>
+              </div>
+            </motion.div>
+          ))
+        )}
       </div>
+
     </div>
   );
 }
-
