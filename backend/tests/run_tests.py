@@ -5,15 +5,27 @@ import unittest
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from fastapi.testclient import TestClient  # noqa: E402
-from app.main import app, startup_db_and_seed  # noqa: E402
-from app.database import init_db  # noqa: E402
+from app.main import app, _seed_replay_signals  # noqa: E402
+from app.database import init_db, get_db  # noqa: E402
+from app.analytics.narrative_threading import NarrativeThreadingService  # noqa: E402
+from app.analytics.inflection_detector import InflectionDetector  # noqa: E402
+from app.analytics.battle_cards import BattleCardService  # noqa: E402
+from app.analytics.retroactive_validation import RetroactiveValidationService  # noqa: E402
 
 
 class TestMetaRadarAPI(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         init_db()
-        startup_db_and_seed()
+        db = next(get_db())
+        try:
+            _seed_replay_signals(db)
+            NarrativeThreadingService.generate_threads(db)
+            InflectionDetector.calculate_inflections(db)
+            BattleCardService.initialize_battle_cards(db)
+            RetroactiveValidationService.get_report(db)
+        finally:
+            db.close()
         cls.client = TestClient(app)
 
     def test_health(self):

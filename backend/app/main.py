@@ -138,6 +138,10 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 def _seed_replay_signals(db: Session):
     for sig_data in REPLAY_SIGNALS:
+        existing = db.query(SignalModel).filter(SignalModel.external_id == sig_data["external_id"]).first()
+        if existing:
+            continue
+
         scout_out, analyst_out, strategist_out, exposure_out, is_fallback = (
             MultiAgentScoringChain.evaluate_signal(
                 sig_data["title"], sig_data["summary"], sig_data["source"]
